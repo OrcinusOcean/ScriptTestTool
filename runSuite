@@ -1,0 +1,50 @@
+#!/bin/bash
+if [ ${#} -ne 2 ] ; then
+	echo "runSuite: incorrect arguments number" 1>&2
+	exit 1
+fi
+#ads=$(pwd)
+#echo $ads
+for name in $(cat $1); do
+	cat ${name}.args >& /dev/null
+	arg=${?}
+	cat ${name}.in >& /dev/null
+	in=${?}
+	tmp=$(mktemp /tmp/XXX)
+	if [ $arg -eq 0 -a $in -eq 0 ] ; then
+		${2} $(cat ${name}.args) < ${name}.in > $tmp
+	elif [ $in -eq 0 ] ; then
+		${2} < ${name}.in > $tmp
+	elif [ $arg -eq 0 ] ; then
+		${2} $(cat ${name}.args) > $tmp
+	else
+		${2} > $tmp
+	fi
+	cat ${name}.out >& /dev/null
+	out=${?}
+	printf "*****************************\n"
+	if [ $out -ne 0 ] ; then
+		echo "runSuite: ${name}.out cannot be accessed" 1>&2
+		exit 2
+	fi
+	diff $tmp ${name}.out >& /dev/null
+	if [ $? -ne 0 ] ; then
+		echo "Test failed: ${name}"
+		echo "Args:"
+		if [ $arg -eq 0 ] ; then
+			cat ${name}.args
+		fi
+		echo "Input:"
+		if [ $in -eq 0 ] ; then
+			cat ${name}.in
+		fi
+		echo "Expected:"
+		cat ${name}.out
+		echo "Actual:"
+		cat $tmp
+	else
+		echo "Test passed: ${name}"
+	fi
+	printf "*****************************\n"
+	rm -f $tmp
+done

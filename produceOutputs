@@ -1,0 +1,20 @@
+#!/bin/bash
+if [ ${#} -ne 2 ] ; then
+	echo "runSuite: incorrect arguments number" 1>&2
+	exit 1
+fi
+for name in $(cat $1); do
+	cat ${name}.args >& /dev/null
+	arg=${?}
+	cat ${name}.in >& /dev/null
+	in=${?}
+	if [ $arg -eq 0 -a $in -eq 0 ] ; then
+		${2} $(cat ${name}.args) < ${name}.in > ${name}.out
+	elif [ $in -eq 0 ] ; then
+		${2} < ${name}.in > ${name}.out
+	elif [ $arg -eq 0 ] ; then
+		${2} $(cat ${name}.args) > ${name}.out
+	else  
+		${2} > ${name}.out
+	fi
+done
